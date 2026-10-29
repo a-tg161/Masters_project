@@ -24,10 +24,12 @@ import corner
 def schechter_function(x, alpha, log_mstar, log_phistar):
     """
     x is log(stellar mass) observed values.
-    Output is y, where y is linear SMF.
+    Output is y, where y is log SMF.
     """
 
-    y = np.log(10) * (10**log_phistar) * np.exp( -10**( x - log_mstar)) * ( 10**( x - log_mstar) )**(alpha + 1)
+    # y = np.log(10) * (10**log_phistar) * np.exp( -10**( x - log_mstar)) * ( 10**( x - log_mstar) )**(alpha + 1)
+
+    y = np.log10(np.log(10)) + log_phistar + ( (1 / np.log(10)) * -10**( x - log_mstar) ) + (alpha + 1) * (x - log_mstar)
 
     return y
 
@@ -144,7 +146,7 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
         print(f"Guesses: alpha = {guess_alpha:.3f}, M_star = {guess_mstar:.3f}, phi_star = {guess_phistar:.3f}")
     
     except np.linalg.LinAlgError:
-        guess_alpha, guess_log_mstar, guess_phistar = -2.0, 10.6, -6.5 # just rough values from Tom's work, these are z dependent
+        guess_alpha, guess_log_mstar, guess_phistar = -2.0, 10, -4.5 # just rough values from Tom's work, these are z dependent
 
     # guess_std = np.std(y - gaussian_function(x-xp, guess_sig, guess_mu, guess_amp))
 
@@ -169,8 +171,8 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
 
     # Set prior limits safely outside empirical distribution boundaries, from Harvey2025
     min_alpha, max_alpha = -3.5, -1.0
-    min_mstar, max_mstar = 8.0, 12.5
-    min_phistar, max_phistar = -8, -2
+    min_mstar, max_mstar = 7.0, 12.5 # ------------------------- changed
+    min_phistar, max_phistar = -10, -2 # ------------------------- changed
 
     def log_prior(theta): 
         """
@@ -212,6 +214,7 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
 
     alpha_med, mstar_med, phistar_med = np.median(flat_samples, axis=0)
     lower_bound = np.percentile(models, 16, axis=0)
+    med_bound = np.percentile(models, 50, axis=0)
     upper_bound = np.percentile(models, 84, axis=0)
 
     # --- Step 5: Visualization ---
@@ -240,6 +243,7 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
         "mstar_median": mstar_med,
         "phistar_median": phistar_med,
         "lower_bound": lower_bound,
+        "med_bound": med_bound,
         "upper_bound": upper_bound,
         "alpha_16": np.percentile(flat_samples[:, 0], 16),
         "alpha_84": np.percentile(flat_samples[:, 0], 84),
@@ -274,15 +278,12 @@ def plotting(results, ax):
     phistar_16 = results["alpha_16"]
     phistar_84 = results["alpha_84"]
     lower_bound = results["lower_bound"]
+    med_bound = results["med_bound"]
     upper_bound = results["upper_bound"]
     x_pivot = results["x_pivot"]
     x_range = results["x_range"]
 
-    log_lower_bound = np.log10(lower_bound)
-    log_upper_bound = np.log10(upper_bound)
-    
-    smf = schechter_function((x_range - x_pivot), alpha_med, mstar_med, phistar_med)
-    log_smf = np.log10(smf)
+    # log_smf = schechter_function((x_range - x_pivot), alpha_med, mstar_med, phistar_med)
 
-    ax.fill_between(x_range, log_lower_bound, log_upper_bound, color="royalblue", alpha=0.3, label=r"1$\sigma$ Confidence")
-    ax.plot(x_range, log_smf, color="darkblue", lw=2, label="Median Schechter Fit")
+    ax.fill_between(x_range, lower_bound, upper_bound, color="royalblue", alpha=0.3, label=r"1$\sigma$ Confidence")
+    ax.plot(x_range, med_bound, color="darkblue", lw=2, label="Median Schechter Fit")
