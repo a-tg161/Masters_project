@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from scipy.optimize import curve_fit
+from scipy import stats
 import scipy.constants as pc
 import astropy.units as u
 from astropy.io import fits
@@ -19,6 +20,85 @@ from matplotlib.gridspec import GridSpec
 import h5py
 import emcee
 import corner
+
+
+def weighted_reduced_chi_squared(y_obs, y_err_low, y_err_high, y_model, n_params,
+                                  x_obs=None, x_err_low=None, x_err_high=None,
+                                  gradient=None):
+    """
+    Calculate the reduced chi-squared for data with asymmetric uncertainties,
+    optionally including x uncertainties projected onto y via the model gradient.
+
+    Parameters
+    ----------
+    y_obs : array_like
+        Observed y values.
+    y_err_low : array_like
+        Lower (negative) uncertainties on y.
+    y_err_high : array_like
+        Upper (positive) uncertainties on y.
+    y_model : array_like
+        Model predictions.
+    n_params : int
+        Number of fitted parameters.
+    x_obs : array_like, optional
+        Observed x values. Required if x_err_low/x_err_high are given.
+    x_err_low : array_like, optional
+        Lower (negative) uncertainties on x. If None, treated as zero.
+    x_err_high : array_like, optional
+        Upper (positive) uncertainties on x. If None, treated as zero.
+    gradient : float, optional
+        Local gradient of the model (dy/dx), used to project x uncertainty
+        onto y. Required if x uncertainties are non-zero.
+
+    Returns
+    -------
+    chi2_red : float
+        Reduced chi-squared.
+    """
+
+    y_obs = np.asarray(y_obs, dtype=float)
+    y_model = np.asarray(y_model, dtype=float)
+    y_err_low = np.asarray(y_err_low, dtype=float)
+    y_err_high = np.asarray(y_err_high, dtype=float)
+
+    # Use the appropriate uncertainty depending on which side of the data
+    sigma_y = np.where(y_model > y_obs, y_err_high, y_err_low)
+
+    # Handle x uncertainties, if provided
+    if x_err_low is None:
+        x_err_low = np.zeros_like(y_obs)
+    else:
+        x_err_low = np.asarray(x_err_low, dtype=float)
+
+    if x_err_high is None:
+        x_err_high = np.zeros_like(y_obs)
+    else:
+        x_err_high = np.asarray(x_err_high, dtype=float)
+
+    # If x errors are all zero, skip the x-error projection entirely —
+    # this avoids requiring x_obs/gradient when there's nothing to project
+    if np.all(x_err_low == 0) and np.all(x_err_high == 0):
+        sigma = sigma_y
+    else:
+        if x_obs is None or gradient is None:
+            raise ValueError("x_obs and gradient must be provided when x uncertainties are non-zero.")
+
+        x_obs = np.asarray(x_obs, dtype=float)
+        sigma_x = np.where(y_model > y_obs, x_err_high, x_err_low)
+
+        # project x uncertainty onto y using the model gradient, combine in quadrature
+        sigma = np.sqrt(sigma_y**2 + (gradient * sigma_x)**2)
+
+    chi2 = np.sum(((y_obs - y_model) / sigma) ** 2)
+
+    dof = len(y_obs) - n_params
+    if dof <= 0:
+        raise ValueError("Degrees of freedom must be positive.")
+
+    chi2_red = chi2 / dof
+
+    return chi2_red
 
 
 def schechter_function(x, alpha, log_mstar, log_phistar):
@@ -118,9 +198,6 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
         & np.isfinite(xe_lo) & np.isfinite(xe_hi)
         & np.isfinite(ye_lo) & np.isfinite(ye_hi)
     )
-
-    print("mask: ", mask)
-    print("shape of mask: ", np.shape(mask))
 
     x = x[mask]
     y = y[mask]
@@ -255,6 +332,16 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
         "x_range": x_range,
     }
 
+    discrete_y_model = schechter_function(x, alpha_med, mstar_med, phistar_med)
+
+    # discrete_y_model = med_bound[x_range]
+
+    red_chi2 = weighted_reduced_chi_squared(y_obs=y, y_err_low=ye_lo, y_err_high=ye_hi, 
+                                            y_model=discrete_y_model, n_params=ndim,
+                                            x_obs=x) # this will go wrong if there are xerrs
+
+    print(rf"Reduced chi squared = {red_chi2:.3f}")
+
     return results
 
 def plotting(results, ax):
@@ -283,7 +370,8 @@ def plotting(results, ax):
     x_pivot = results["x_pivot"]
     x_range = results["x_range"]
 
-    # log_smf = schechter_function((x_range - x_pivot), alpha_med, mstar_med, phistar_med)
-
     ax.fill_between(x_range, lower_bound, upper_bound, color="royalblue", alpha=0.3, label=r"1$\sigma$ Confidence")
     ax.plot(x_range, med_bound, color="darkblue", lw=2, label="Median Schechter Fit")
+
+    y_model = schechter_function((x_range - x_pivot), alpha_med, mstar_med, phistar_med)
+    ax.plot(x_range, y_model, color="lime", lw=2, label="Dummy")
