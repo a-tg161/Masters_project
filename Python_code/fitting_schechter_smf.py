@@ -263,13 +263,26 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
         raise ValueError("Not enough finite data points.")
 
     # --- Step 2: Robust Initial Guess ---
+
+    # Prior limitsn from Harvey 2025
+    min_alpha, max_alpha = -3.5, -1.0
+    min_mstar, max_mstar = 7.0, 12.5 # ---- changed
+    min_phistar, max_phistar = -10, -2 # ---- changed
+
     try:
         popt, pcov = curve_fit(schechter_function, x - xp, y, p0=[-2.0, 10.6, -6.5])
         guess_alpha, guess_mstar, guess_phistar = popt
         print(f"Guesses: alpha = {guess_alpha:.3f}, M_star = {guess_mstar:.3f}, phi_star = {guess_phistar:.3f}")
     
     except np.linalg.LinAlgError:
-        guess_alpha, guess_log_mstar, guess_phistar = -2.0, 10, -4.5 # just rough values from Tom's work, these are z dependent
+        guess_alpha, guess_mstar, guess_phistar = -2.0, 10, -4.5 # just rough values from Tom's work, these are z dependent
+
+    if (min_alpha > guess_alpha) or (guess_alpha > max_alpha):
+        guess_alpha = -2.0
+    if (min_mstar > guess_mstar) or (guess_mstar > max_mstar):
+        guess_mstar = 10
+    if (min_phistar > guess_phistar) or (guess_phistar > max_phistar):
+        guess_phistar = -4.5
 
     # guess_std = np.std(y - gaussian_function(x-xp, guess_sig, guess_mu, guess_amp))
 
@@ -291,11 +304,6 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
         # ln_L = - (n/2) * np.log(2*np.pi) - n * np.log(sig) - 0.5 * np.sum( ((delta - mu)  / sig)**2)
 
         return ln_L
-
-    # Set prior limits safely outside empirical distribution boundaries, from Harvey2025
-    min_alpha, max_alpha = -3.5, -1.0
-    min_mstar, max_mstar = 7.0, 12.5 # ------------------------- changed
-    min_phistar, max_phistar = -10, -2 # ------------------------- changed
 
     def log_prior(theta): 
         """
