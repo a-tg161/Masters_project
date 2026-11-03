@@ -20,6 +20,7 @@ from matplotlib.gridspec import GridSpec
 import h5py
 import emcee
 import corner
+import math
 
 
 def weighted_reduced_chi_squared(y_obs, y_err_low, y_err_high, y_model, n_params,
@@ -195,7 +196,7 @@ def _parse_err(err, n):
 
 
 def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
-                     n_walkers=32, n_steps=5000, plot=True, save_path=None):
+                     n_walkers=32, n_steps=5000, plot=True):
     """
     Bayesian gaussian fit without intrinsic scatter,
     supporting asymmetric measurement errors in both x and y (but we have none here).
@@ -383,7 +384,6 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
         "mstar_84": np.percentile(flat_samples[:, 1], 84),
         "phistar_16": np.percentile(flat_samples[:, 2], 16),
         "phistar_84": np.percentile(flat_samples[:, 2], 84),
-        "x_pivot": xp,
         "x_range": x_range,
     }
 
@@ -416,17 +416,13 @@ def plotting(results, ax):
     mstar_med = results["mstar_median"]
     mstar_16 = results["mstar_16"]
     mstar_84 = results["mstar_84"]
-    phistar_med = results["alpha_median"]
-    phistar_16 = results["alpha_16"]
-    phistar_84 = results["alpha_84"]
+    phistar_med = results["phistar_median"]
+    phistar_16 = results["phistar_16"]
+    phistar_84 = results["phistar_84"]
     lower_bound = results["lower_bound"]
     med_bound = results["med_bound"]
     upper_bound = results["upper_bound"]
-    x_pivot = results["x_pivot"]
     x_range = results["x_range"]
 
     ax.fill_between(x_range, lower_bound, upper_bound, color="royalblue", alpha=0.3, label=r"1$\sigma$ Confidence")
     ax.plot(x_range, med_bound, color="darkblue", lw=2, label="Median Schechter Fit")
-
-    y_model = schechter_function((x_range - x_pivot), alpha_med, mstar_med, phistar_med)
-    # ax.plot(x_range, y_model, color="lime", lw=2, label="Dummy")
