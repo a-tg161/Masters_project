@@ -101,6 +101,52 @@ def weighted_reduced_chi_squared(y_obs, y_err_low, y_err_high, y_model, n_params
     return chi2_red
 
 
+def format_value_uncertainty(value, upper_err, lower_err):
+    """
+    Format a value with asymmetric uncertainties using standard
+    significant-figure rules (PDG rounding: 1 sig fig, or 2 if the
+    leading digit is 1 or 2).
+
+    Parameters
+    ----------
+    value : float
+        Central value.
+    upper_err : float
+        +1 sigma uncertainty.
+    lower_err : float
+        -1 sigma uncertainty.
+
+    Returns
+    -------
+    value_str, upper_str, lower_str : str
+        Formatted value and uncertainties, all rounded to a consistent
+        number of decimal places.
+    """
+
+    if upper_err == 0 and lower_err == 0:
+        return f"{value:.3f}", "0", "0"
+
+    def get_decimals(err):
+        if err == 0:
+            return 0
+        exponent = math.floor(math.log10(abs(err)))
+        first_digit = int(abs(err) / 10**exponent)
+        sig_figs = 2 if first_digit in [1, 2] else 1
+        return -(exponent - (sig_figs - 1))
+
+    # decide precision using whichever error needs more decimal places,
+    # so neither error gets rounded away to zero
+    decimals = max(get_decimals(upper_err), get_decimals(lower_err))
+
+    value_rounded = round(value, decimals)
+    upper_rounded = round(upper_err, decimals)
+    lower_rounded = round(lower_err, decimals)
+
+    fmt = f"{{:.{max(decimals, 0)}f}}"
+
+    return fmt.format(value_rounded), fmt.format(upper_rounded), fmt.format(lower_rounded)
+
+
 def schechter_function(x, alpha, log_mstar, log_phistar):
     """
     x is log(stellar mass) observed values.
@@ -312,7 +358,7 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
         plt.show()
         """
 
-        labels = [r"alpha $\alpha$", r"$M_\star$", r"$\phi_\star$"]
+        labels = [r"alpha $\alpha$", r"$\log_{10}(M_\star)$", r"$\log_{10}(\phi_\star)$"]
         corner.corner(flat_samples, labels=labels, truths=[alpha_med, mstar_med, phistar_med], show_titles=True)
         plt.show()
 
