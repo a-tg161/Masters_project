@@ -375,4 +375,4 @@ def plotting(results, ax):
     ax.plot(x_range, med_bound, color="darkblue", lw=2, label="Median Schechter Fit")
 
     y_model = schechter_function((x_range - x_pivot), alpha_med, mstar_med, phistar_med)
-    ax.plot(x_range, y_model, color="lime", lw=2, label="Dummy")
+    # ax.plot(x_range, y_model, color="lime", lw=2, label="Dummy")
