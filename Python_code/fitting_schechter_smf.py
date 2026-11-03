@@ -282,6 +282,7 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
     flat_samples = sampler.get_chain(discard=1000, thin=15, flat=True)
 
     x_range = np.linspace(x.min(), x.max(), 100)
+
     alpha_samples = flat_samples[:, 0]
     mstar_samples = flat_samples[:, 1]
     phistar_samples = flat_samples[:, 2]
