@@ -197,8 +197,8 @@ def _parse_err(err, n):
     return arr.copy(), arr.copy()
 
 
-def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
-                     n_walkers=32, n_steps=5000, plot=True):
+def fit_smf_mcmc(corner_path, x_in, y_in, x_err=None, y_err=None, x_pivot=None,
+                n_walkers=32, n_steps=5000, plot=True):
     """
     Bayesian gaussian fit without intrinsic scatter,
     supporting asymmetric measurement errors in both x and y (but we have none here).
@@ -371,7 +371,6 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
 
         labels = [r"alpha $\alpha$", r"$\log_{10}(M_\star)$", r"$\log_{10}(\phi_\star)$"]
         corner.corner(flat_samples, labels=labels, truths=[alpha_med, mstar_med, phistar_med], show_titles=True)
-        corner_path = os.path.join(PLOT_PATH, f"corner_plot_{alpha_med:.3f}.png")
         plt.savefig(corner_path, dpi=150)
         plt.show()
 
