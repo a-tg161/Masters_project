@@ -22,6 +22,8 @@ import emcee
 import corner
 import math
 
+PLOT_PATH = "/raid/scratch/work/alberttg/Masters_project/Plots/Schechter_corner_plots"
+
 
 def weighted_reduced_chi_squared(y_obs, y_err_low, y_err_high, y_model, n_params,
                                   x_obs=None, x_err_low=None, x_err_high=None,
@@ -369,7 +371,19 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
 
         labels = [r"alpha $\alpha$", r"$\log_{10}(M_\star)$", r"$\log_{10}(\phi_\star)$"]
         corner.corner(flat_samples, labels=labels, truths=[alpha_med, mstar_med, phistar_med], show_titles=True)
+        corner_path = os.path.join(PLOT_PATH, f"corner_plot_{alpha_med:.3f}.png")
+        plt.savefig(corner_path, dpi=150)
         plt.show()
+
+    discrete_y_model = schechter_function(x, alpha_med, mstar_med, phistar_med)
+    
+    # discrete_y_model = med_bound[x_range]
+
+    red_chi2 = weighted_reduced_chi_squared(y_obs=y, y_err_low=ye_lo, y_err_high=ye_hi, 
+                                            y_model=discrete_y_model, n_params=ndim,
+                                            x_obs=x) # this will go wrong if there are xerrs
+
+    print(rf"Reduced chi squared = {red_chi2:.3f}")
 
     results = {
         "alpha_median": alpha_med,
@@ -385,17 +399,9 @@ def fit_smf_mcmc(x_in, y_in, x_err=None, y_err=None, x_pivot=None,
         "phistar_16": np.percentile(flat_samples[:, 2], 16),
         "phistar_84": np.percentile(flat_samples[:, 2], 84),
         "x_range": x_range,
+        "x_pivot": xp,
+        "red_chi2": red_chi2,
     }
-
-    discrete_y_model = schechter_function(x, alpha_med, mstar_med, phistar_med)
-
-    # discrete_y_model = med_bound[x_range]
-
-    red_chi2 = weighted_reduced_chi_squared(y_obs=y, y_err_low=ye_lo, y_err_high=ye_hi, 
-                                            y_model=discrete_y_model, n_params=ndim,
-                                            x_obs=x) # this will go wrong if there are xerrs
-
-    print(rf"Reduced chi squared = {red_chi2:.3f}")
 
     return results
 
