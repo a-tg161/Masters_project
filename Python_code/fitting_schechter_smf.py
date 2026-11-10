@@ -197,7 +197,7 @@ def _parse_err(err, n):
     return arr.copy(), arr.copy()
 
 
-def fit_smf_mcmc(corner_path, x_in, y_in, x_err=None, y_err=None, x_pivot=None,
+def fit_smf_mcmc_schechter(corner_path, x_in, y_in, x_err=None, y_err=None, x_pivot=None,
                 n_walkers=32, n_steps=5000, plot=True):
     """
     Bayesian gaussian fit without intrinsic scatter,
@@ -404,7 +404,7 @@ def fit_smf_mcmc(corner_path, x_in, y_in, x_err=None, y_err=None, x_pivot=None,
 
     return results
 
-def plotting(results, ax):
+def plotting_schechter_function(results, ax):
 
     """
     Parameters
