@@ -375,14 +375,6 @@ def fit_smf_mcmc_power(corner_path, x_in, y_in, x_err=None, y_err=None, x_pivot=
         plt.show()
 
     discrete_y_model = power_law(x, alpha_med, mstar_med, phistar_med)
-    
-    # discrete_y_model = med_bound[x_range]
-
-    red_chi2 = weighted_reduced_chi_squared(y_obs=y, y_err_low=ye_lo, y_err_high=ye_hi, 
-                                            y_model=discrete_y_model, n_params=ndim,
-                                            x_obs=x) # this will go wrong if there are xerrs
-
-    print(rf"Reduced chi squared = {red_chi2:.3f}")
 
     results = {
         "alpha_median": alpha_med,
@@ -399,7 +391,6 @@ def fit_smf_mcmc_power(corner_path, x_in, y_in, x_err=None, y_err=None, x_pivot=
         "phistar_84": np.percentile(flat_samples[:, 2], 84),
         "x_range": x_range,
         "x_pivot": xp,
-        "red_chi2": red_chi2,
     }
 
     return results
