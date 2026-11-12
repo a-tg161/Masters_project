@@ -1,4 +1,7 @@
 Data_products/*
 Data_inputs/*
+Lorentzian_corner_plots/*
+Plots/Gaussian_corner_plots/*
+Plots/Double_gaussian_corner_plots/*
 .venv311/*
 __pycache__
