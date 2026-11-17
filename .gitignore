@@ -1,7 +1,10 @@
 Data_products/*
 Data_inputs/*
-Lorentzian_corner_plots/*
-Plots/Gaussian_corner_plots/*
-Plots/Double_gaussian_corner_plots/*
+Plots/Gridspec_mass_errors/Lorentzian_corner_plots/*
+Plots/Gridspec_mass_errors/Gaussian_corner_plots/*
+Plots/Gridspec_mass_errors/Double_gaussian_corner_plots/*
+Plots/Power_law_corner_plots/*
+Plots/Schechter_corner_plots/*
+Plots/V_max_vs_M_UV_plots/*
 .venv311/*
 __pycache__
